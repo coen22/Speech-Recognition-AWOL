@@ -11,6 +11,7 @@ from recognize import predict_file, predict_file_async, init
 
 app = FastAPI()
 
+# List of origins that are allowed to make requests to this server
 origins = [
     "http://localhost",
     "http://localhost:8080",
@@ -19,6 +20,7 @@ origins = [
     "http://fhmlhsrwks0140.wired.unimaas.local:8001",
 ]
 
+# Setup CORS middleware to allow requests from the specified origins
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -27,19 +29,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 @app.get("/")
 def read_root():
+    # A simple endpoint that returns a JSON response
     return {"Hello": "World"}
-
 
 @app.post("/ping")
 def ping():
+    # Endpoint for health check or server status
     return True
-
 
 @app.post("/transcribe/{model_id}")
 async def transcribe(model_id: str = '1', file: UploadFile = File(...)):
+    # Asynchronous endpoint for transcribing an audio file
     now = datetime.now()
     dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
     print(dt_string, "transcribe()")
@@ -53,17 +55,17 @@ async def transcribe(model_id: str = '1', file: UploadFile = File(...)):
 
         return result
 
-
 @app.post("/transcribe_async/{model_id}")
 def transcribe_async(model_id: str = '1', file: UploadFile = File(...)):
+    # Synchronous endpoint that returns a streaming response for transcribing
     print("transcribe_async()")
 
     tmp_path = save_upload_file_tmp(file)
     return StreamingResponse(predict_file_async(tmp_path), media_type='text/plain')
 
-
 @app.post("/save_data")
 def save_data(file_data: str = Form(...)):
+    # Endpoint for saving data sent through a form
     print("save_datas()")
 
     suffix = '.json'
@@ -73,9 +75,8 @@ def save_data(file_data: str = Form(...)):
 
     return 'success'
 
-
-# TODO remove file afterwards
 def save_upload_file_tmp(upload_file: UploadFile) -> Path:
+    # Utility function to save an uploaded file to a temporary file
     try:
         suffix = Path(upload_file.filename).suffix
         with NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
@@ -85,8 +86,7 @@ def save_upload_file_tmp(upload_file: UploadFile) -> Path:
         upload_file.file.close()
     return tmp_path
 
-
 if __name__ == "__main__":
-    init()
+    init() # Initializes any required resources or models before starting the server
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000) # Starts the FastAPI app
